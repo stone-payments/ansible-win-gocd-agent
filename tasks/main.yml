@@ -1,0 +1,41 @@
+---
+  - name: install gocdagent package
+    win_chocolatey:
+      name: gocdagent
+      version: "{{ gocd_version }}"
+      state: present
+      install_args: /START_AGENT=NO /D={{ gocd_working_directory }}
+      source: "{{ chocolatey_source }}"
+      force: "{{ gocd_reinstall_agent }}"
+    register: package_install
+  # Needed service stop before version 17.6 and install arg "/START_AGENT=NO" implementation
+  - name: stop goagent service
+    win_service:
+      name: "{{ gocd_service_name }}"
+      start_mode: auto
+      state: stopped
+    when: package_install.changed
+  - name: setup goserver url
+    win_environment:
+      name: GO_SERVER_URL
+      value: "{{ gocd_server_url }}"
+      state: present
+      level: machine
+  - set_fact:
+      current_agent_working_directory: "{{ gocd_working_directory }}"
+  - include: autoregister.yml
+  - include: setup_ssh.yml
+  - include: setup_service_user.yml
+  - set_fact:
+      gocd_agent_total_instances: 2
+      install_additional_agents: no
+    when: gocd_agent_total_instances <= 1
+  - name: install additional agents
+    include: additional_agents.yml
+    when: install_additional_agents
+    with_sequence: start=2 end={{ gocd_agent_total_instances }}
+  - name: start goagent service
+    win_service:
+      name: "{{ gocd_service_name }}"
+      start_mode: auto
+      state: started

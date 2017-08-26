@@ -1,0 +1,26 @@
+  # Prevent second run to return changed (The autoregister file is changed by gocd after registration)
+  - name: check whether template autoregister
+    win_stat:
+      path: "{{ current_agent_working_directory }}\\config\\autoregister.properties"
+    register: autoregister_stat
+    when: gocd_auto_register_key |default("") != ""
+  - name: gathering available default resource list
+    set_fact:
+      gocd_agent_autoregister_resources: ["{{ ansible_distribution }}", "{{ ansible_distribution }}-{{ ansible_distribution_version }}", "windows"]
+    when: 
+      - autoregister_stat.stat.exists == false
+      - gocd_auto_register_key |default("") != ""
+  - name: merge agent resources list
+    set_fact:
+      gocd_agent_autoregister_resources: "{{ gocd_agent_autoregister_resources + gocd_agent_additional_resources }}"
+    when:
+      - autoregister_stat.stat.exists == false
+      - gocd_auto_register_key |default("") != ""
+  - name: set auto-register properties
+    win_template:
+      src: autoregister.properties
+      dest: "{{ current_agent_working_directory }}\\config"
+    register: autoregister
+    when:
+      - autoregister_stat.stat.exists == false
+      - gocd_auto_register_key |default("") != ""

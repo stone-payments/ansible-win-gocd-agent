@@ -1,0 +1,28 @@
+---
+gocd_server_url: https://localhost:8154/go
+gocd_version: 17.8.0
+
+# Overwrite gocd windows service account.
+gocd_user: go
+#gocd_user_pass:
+gocd_user_domain: "{{ localhost_domain_alias }}"
+gocd_user_groups:
+  - Administrators
+gocd_user_home: "{{ ansible_env.SystemDrive }}\\users\\{{ gocd_user }}"
+
+# Define to use safe way to add ssh keys.
+#gocd_ssh_private_key_content
+#gocd_ssh_public_key
+gocd_ssh_config: .ssh/config
+
+gocd_base_working_directory: "{{ ansible_env.SystemDrive }}\\Agents"
+gocd_agent_total_instances: "{{ ansible_processor_count * ansible_processor_cores }}"
+
+chocolatey_source: https://www.chocolatey.org/api/v2/
+gocd_reinstall_agent: no
+
+# Auto registration info
+gocd_auto_register_key:
+gocd_agent_additional_resources: []
+gocd_environments: []
+

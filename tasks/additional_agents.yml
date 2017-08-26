@@ -1,0 +1,84 @@
+  - name: check additional service
+    raw: Get-Service "{{ gocd_service_name }}-{{item}}"
+    register: check_additional_service
+    changed_when: check_additional_service.rc != 0
+    ignore_errors: yes
+  - name: stop goagent service to copy file to additional installation
+    win_service:
+      name: "{{ gocd_service_name }}"
+      start_mode: auto
+      state: stopped
+    when: check_additional_service.changed or package_install.changed
+  - name: stop goagent additional service
+    win_service:
+      name: "{{ gocd_service_name }}-{{item}}"
+      start_mode: auto
+      state: stopped
+    ignore_errors: yes
+    when: check_additional_service.changed or package_install.changed
+  - name: copy installation folder
+    win_copy:
+      src: "{{ gocd_working_directory }}/"
+      dest: "{{ gocd_base_working_directory }}\\{{ item }}"
+      remote_src: yes
+    register: installation_copy
+    when: check_additional_service.changed or package_install.changed
+    # workaround ansible 2.3 win_copy dir content bug.
+  - raw: Copy-Item "{{ gocd_base_working_directory }}\\{{ item }}\\1\\*" "{{ gocd_base_working_directory }}\\{{ item }}" -Force -Recurse
+    when: installation_copy.changed
+  - win_file:
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\1"
+      state: absent
+    when: installation_copy.changed
+  - name: remove original agent identity files
+    win_file:
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\config\\guid.txt"
+      state: absent
+    when: installation_copy.changed
+  - name: remove original agent identity files
+    win_file:
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\config\\.agent-bootstrapper.running"
+      state: absent
+    when: installation_copy.changed
+  - name: remove original agent identity files
+    win_file:
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\config\\autoregister.properties"
+      state: absent
+    when: installation_copy.changed
+  - win_file: path={{ file }} state=absent
+    with_fileglob: "{{ gocd_base_working_directory }}\\{{ item }}\\*.log"
+    loop_control:
+      loop_var: file
+  - name: setup agent config (java home)
+    win_lineinfile:
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\config\\wrapper-agent.conf"
+      insertafter: '#include ../conf/wrapper-license.conf'
+      line: 'set.GO_AGENT_JAVA_HOME=%GO_AGENT_DIR%\jre'
+  - name: setup agent config (working dir)
+    win_lineinfile:
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\config\\wrapper-agent.conf"
+      insertafter: '#include ../conf/wrapper-license.conf'
+      line: "set.GO_AGENT_DIR={{ gocd_base_working_directory }}\\{{ item }}\\"
+  - set_fact:
+      current_agent_working_directory: "{{ gocd_base_working_directory }}\\{{ item }}\\"
+  - include: autoregister.yml
+  - name: "create agent service"
+    win_service:
+      name: "{{ gocd_service_name }}-{{item}}"
+      start_mode: auto
+      state: started
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\cruisewrapper.exe -s {{ gocd_base_working_directory }}\\{{ item }}\\config\\wrapper-agent.conf"
+      username: "{{ gocd_user_domain }}\\{{ gocd_user }}"
+      password: "{{ gocd_user_pass }}"
+    when: 
+      - gocd_user is defined
+      - installation_copy.changed
+  - name: "create agent service"
+    win_service:
+      name: "{{ gocd_service_name }}-{{item}}"
+      start_mode: auto
+      state: started
+      path: "{{ gocd_base_working_directory }}\\{{ item }}\\cruisewrapper.exe -s {{ gocd_base_working_directory }}\\{{ item }}\\config\\wrapper-agent.conf"
+    when:
+      - gocd_user is not defined
+      - installation_copy.changed

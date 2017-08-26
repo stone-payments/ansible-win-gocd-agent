@@ -1,0 +1,31 @@
+  - name: ensure go user is present
+    win_user:
+      name: "{{ gocd_user }}"
+      password: "{{ gocd_user_pass }}"
+      state: present
+      password_never_expires: yes
+      groups: "{{ gocd_user_groups}}"
+    when:
+      - gocd_user_groups is defined
+      - gocd_user_pass is defined
+    register: go_user_creation
+  - name: set user home directory
+    raw: net user {{ gocd_user }} /homedir:{{ gocd_user_home }} /profilepath:{{ gocd_user_home }}
+    when: go_user_creation.changed
+  - name: check service user
+    raw: (Get-WmiObject win32_service -filter "name='{{ gocd_service_name }}'").StartName
+    register: check_service_user
+    changed_when: check_service_user.stdout_lines[0] != gocd_user_with_domain
+  - name: add logon as service right to user
+    script: AddLogonAsService.ps1 -accountToAdd "{{ ansible_env.COMPUTERNAME }}\\{{ gocd_user }}"
+    when: 
+      - check_service_user.changed
+      - gocd_user_domain == localhost_domain_alias
+  - name: change goagent winservice user
+    win_service:
+      name: "{{ gocd_service_name }}"
+      start_mode: auto
+      state: restarted
+      username: "{{ gocd_user_domain }}\\{{ gocd_user }}"
+      password: "{{ gocd_user_pass }}"
+    when: check_service_user.changed

@@ -1,0 +1,6 @@
+---
+localhost_domain_alias: "."
+gocd_service_name: Go Agent
+gocd_working_directory: "{{ gocd_base_working_directory }}\\1"
+gocd_user_with_domain: "{{ gocd_user_domain }}\\{{ gocd_user }}"
+install_additional_agents: yes

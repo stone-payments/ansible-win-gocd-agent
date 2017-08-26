@@ -1,0 +1,15 @@
+galaxy_info:
+  author: cnatan
+  description: GoCD agent installation role
+  company: Stone Payments
+  license: MIT
+  min_ansible_version: 2.3
+  platforms:
+    - name: Windows
+      versions:
+        - 2012R2
+  galaxy_tags:
+    - gocd
+    - windows
+    - ci
+    - cd

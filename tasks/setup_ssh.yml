@@ -1,0 +1,16 @@
+  - name: create ssh directory
+    win_file:
+      path: "{{ gocd_user_home }}\\.ssh"
+      state: directory
+  - name: add ssh private key
+    win_copy:
+      content: "{{ gocd_ssh_private_key_content }}"
+      dest: "{{ gocd_user_home }}\\.ssh\\id_rsa"
+  - name: add ssh public key
+    win_copy:
+      src: "{{ gocd_ssh_public_key }}"
+      dest: "{{ gocd_user_home }}\\.ssh\\id_rsa.pub"
+  - name: add ssh config file
+    win_template:
+      src: "{{ gocd_ssh_config }}"
+      dest: "{{ gocd_user_home }}\\.ssh\\config"
