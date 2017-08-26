@@ -11,6 +11,6 @@
       src: "{{ gocd_ssh_public_key }}"
       dest: "{{ gocd_user_home }}\\.ssh\\id_rsa.pub"
   - name: add ssh config file
-    win_template:
+    win_copy:
       src: "{{ gocd_ssh_config }}"
       dest: "{{ gocd_user_home }}\\.ssh\\config"
