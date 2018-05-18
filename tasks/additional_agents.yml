@@ -24,8 +24,8 @@
     register: installation_copy
     when: check_additional_service.changed or package_install.changed
     # workaround ansible 2.3 win_copy dir content bug.
-  - raw: Copy-Item "{{ gocd_base_working_directory }}\\{{ item }}\\1\\*" "{{ gocd_base_working_directory }}\\{{ item }}" -Force -Recurse
-    when: installation_copy.changed
+  # - raw: Copy-Item "{{ gocd_base_working_directory }}\\\1\\*" "{{ gocd_base_working_directory }}\\{{ item }}" -Force -Recurse
+  #   when: installation_copy.changed
   - win_file:
       path: "{{ gocd_base_working_directory }}\\{{ item }}\\1"
       state: absent

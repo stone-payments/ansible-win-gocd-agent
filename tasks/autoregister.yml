@@ -19,7 +19,7 @@
   - name: set auto-register properties
     win_template:
       src: autoregister.properties
-      dest: "{{ current_agent_working_directory }}\\config"
+      dest: "{{ current_agent_working_directory }}\\config\\autoregister.properties"
     register: autoregister
     when:
       - autoregister_stat.stat.exists == false
